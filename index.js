@@ -7,6 +7,9 @@
 nearley = require('nearley');
 grammar = require('./grammar');
 
+const OPEN_PAREN = '('
+const CLOSE_PAREN = ')'
+
 // returns a syntax tree from a string like "(1d4 + 2)^10"
 function parse(string) {
   const parser = new nearley.Parser(grammar.ParserRules, grammar.ParserStart);
@@ -20,33 +23,59 @@ function parse(string) {
 //   explanation :: MarkdownString
 // }
 function evaluate(tree) {
-  return tree.value;
+  return unwrap(tree).value;
+}
+
+const BANNED_TOKENS = ['(', ')'];
+
+function contains(needle, haystack) {
+  return haystack.indexOf(needle) > -1;
+}
+
+function keep(token) {
+  return !contains(token, BANNED_TOKENS);
 }
 
 // render the annotation of a tree
 function render(almostTree) {
   const tree = unwrap(almostTree);
-  if (tree === null) return null;
+  //console.log('render', tree)
+  debugger;
+  if (tree === null) return 'NULL';
   if (tree.src) return render(tree.src);
-  if (Array.isArray(tree)) return '(' + tree.filter(Boolean).map(render).join(' ') + ')';
+  if (Array.isArray(tree)) {
+    // handle paren arrays
+    if (tree[0] === OPEN_PAREN && tree[tree.length - 1] === CLOSE_PAREN) {
+      return '(' + render(tree.slice(1, -1)) + ')';
+    }
+
+    return tree.map(render).join(' ');
+  }
   return tree;
 }
 
 function unwrap(array) {
-  if (Array.isArray(array) && array.length === 1) return unwrap(array[0]);
-  return array;
+  if (!Array.isArray(array)) return array;
+  const noNulls = array.filter(Boolean);
+  const reduced = noNulls.map(unwrap);
+  if (noNulls.length === 1) return unwrap(noNulls[0]);
+  return reduced;
 }
 
-function main() {
-  const input = process.argv[2]
+function run(input) {
   console.log(`input: ${input}`)
   const tree = parse(input)
   console.log('--- tree ---')
-  console.log(JSON.stringify(tree, null, "  "))
+  console.log(JSON.stringify(tree, null, "  ")) // unwrap(unwrap(tree).src), null, "  "))
   console.log('--- result ---')
   console.log(evaluate(tree))
   console.log('--- annotation ---')
   console.log(render(tree));
+}
+
+function main() {
+  const input = process.argv[2];
+  run(input);
 }
 
 main();

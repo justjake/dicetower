@@ -1,3 +1,6 @@
+@builtin "number.ne"
+@builtin "whitespace.ne"
+
 @{%
 
 function normal(evaluator) {
@@ -10,15 +13,15 @@ function normal(evaluator) {
 }
 
 function val(el) {
-  if (el && 'value' in el) {
-    return el.value || el;
+  if (el && el.value !== undefined) {
+    return el.value;
   }
   return el;
 }
 
 function src(el) {
-  if (el) {
-    return el.src || el;
+  if (el && el.src !== undefined) {
+    return el.src;
   }
   return el;
 }
@@ -45,7 +48,16 @@ main -> _ AS _ {% normal(function(d) {return d[1]; }) %}
 # We define each level of precedence as a nonterminal.
 
 # Parentheses
-P -> "(" _ AS _ ")" {% normal(function(d) {return d[2]; }) %}
+P -> "(" _ AS _ ")" {%
+  /* function(d) {
+    var proc = function(d) { return d[2]; }
+    var tfx = normal(proc);
+    var procd = tfx(d);
+    procd.src = [ proc(procd.src) ];
+    return procd
+  } */
+  normal(function(d) { return d[2]; })
+%}
     | N             {% id %}
 
 # Exponents
@@ -63,7 +75,8 @@ AS -> AS _ "+" _ MD {% normal(function(d) {return d[0]+d[4]; }) %}
     | MD            {% id %}
 
 # A number or a normal(function of a number
-N -> float          {% id %}
+N -> decimal        {% id %}
+    | DICE          {% id %}
     | "sin" _ P     {% normal(function(d) {return Math.sin(d[2]); }) %}
     | "cos" _ P     {% normal(function(d) {return Math.cos(d[2]); }) %}
     | "tan" _ P     {% normal(function(d) {return Math.tan(d[2]); }) %}
@@ -77,9 +90,8 @@ N -> float          {% id %}
     | "sqrt" _ P    {% normal(function(d) {return Math.sqrt(d[2]); }) %}
     | "ln" _ P      {% normal(function(d) {return Math.log(d[2]); })  %}
 
-    | DICE
-
-DICE -> int "d" int {%
+DICE -> posint "d" posint {%
+  // TODO dice it up for reals
   function(d) {
     return {
       value: d[0] * d[2],
@@ -87,16 +99,3 @@ DICE -> int "d" int {%
     }
   }
 %}
-
-# I use `float` to basically mean a number with a decimal point in it
-float ->
-      int "." int   {% function(d) {return parseFloat(d[0] + d[1] + d[2])} %}
-	| int           {% function(d) {return parseInt(d[0])} %}
-
-int -> [0-9]        {% id %}
-	| int [0-9]     {% function(d) {return d[0] + d[1]} %}
-
-# Whitespace. The important thing here is that the postprocessor
-# is a null-returning normal(function. This is a memory efficiency trick.
-_ -> null       {% function(d) {return null; } %}
-	| _ [\s]    {% function(d) {return null; } %}
