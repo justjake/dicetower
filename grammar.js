@@ -7,22 +7,22 @@ function id(x) {return x[0]; }
 function normal(evaluator) {
   return function(data) {
     var unwrapped = data.map(val);
-    var value = evaluator(data);
-    var annotation = data.map(ann);
-    return { annotation: annotation, value: value };
+    var value = evaluator(unwrapped);
+    var annotation = data.map(src);
+    return { src: annotation, value: value };
   }
 }
 
 function val(el) {
-  if (el) {
+  if (el && 'value' in el) {
     return el.value || el;
   }
   return el;
 }
 
-function ann(el) {
+function src(el) {
   if (el) {
-    return el.annotation || el;
+    return el.src || el;
   }
   return el;
 }
@@ -61,7 +61,14 @@ var grammar = {
     {"name": "N$string$9", "symbols": [{"literal":"l"}, {"literal":"n"}], "postprocess": function joiner(d) {return d.join('');}},
     {"name": "N", "symbols": ["N$string$9", "_", "P"], "postprocess": normal(function(d) {return Math.log(d[2]); })},
     {"name": "N", "symbols": ["DICE"]},
-    {"name": "DICE", "symbols": ["int", {"literal":"d"}, "int"], "postprocess": function(d) { return { value: d[0] * d[2], annotation: 'lol dice: ' + d[0] + ' ' + d[2] } }},
+    {"name": "DICE", "symbols": ["int", {"literal":"d"}, "int"], "postprocess": 
+        function(d) {
+          return {
+            value: d[0] * d[2],
+            src: 'lol dice: ' + d[0] + ' ' + d[2]
+          }
+        }
+        },
     {"name": "float", "symbols": ["int", {"literal":"."}, "int"], "postprocess": function(d) {return parseFloat(d[0] + d[1] + d[2])}},
     {"name": "float", "symbols": ["int"], "postprocess": function(d) {return parseInt(d[0])}},
     {"name": "int", "symbols": [/[0-9]/], "postprocess": id},

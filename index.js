@@ -20,7 +20,21 @@ function parse(string) {
 //   explanation :: MarkdownString
 // }
 function evaluate(tree) {
-  return tree
+  return tree.value;
+}
+
+// render the annotation of a tree
+function render(almostTree) {
+  const tree = unwrap(almostTree);
+  if (tree === null) return null;
+  if (tree.src) return render(tree.src);
+  if (Array.isArray(tree)) return '(' + tree.filter(Boolean).map(render).join(' ') + ')';
+  return tree;
+}
+
+function unwrap(array) {
+  if (Array.isArray(array) && array.length === 1) return unwrap(array[0]);
+  return array;
 }
 
 function main() {
@@ -31,6 +45,8 @@ function main() {
   console.log(JSON.stringify(tree, null, "  "))
   console.log('--- result ---')
   console.log(evaluate(tree))
+  console.log('--- annotation ---')
+  console.log(render(tree));
 }
 
 main();

@@ -3,27 +3,28 @@
 function normal(evaluator) {
   return function(data) {
     var unwrapped = data.map(val);
-    var value = evaluator(data);
-    var annotation = data.map(ann);
-    return { annotation: annotation, value: value };
+    var value = evaluator(unwrapped);
+    var annotation = data.map(src);
+    return { src: annotation, value: value };
   }
 }
 
 function val(el) {
-  if (el) {
+  if (el && 'value' in el) {
     return el.value || el;
   }
   return el;
 }
 
-function ann(el) {
+function src(el) {
   if (el) {
-    return el.annotation || el;
+    return el.src || el;
   }
   return el;
 }
 
 %}
+
 # This is a nice little grammar to familiarize yourself
 # with the nearley syntax.
 
@@ -78,7 +79,14 @@ N -> float          {% id %}
 
     | DICE
 
-DICE -> int "d" int {% function(d) { return { value: d[0] * d[2], annotation: 'lol dice: ' + d[0] + ' ' + d[2] } } %}
+DICE -> int "d" int {%
+  function(d) {
+    return {
+      value: d[0] * d[2],
+      src: 'lol dice: ' + d[0] + ' ' + d[2]
+    }
+  }
+%}
 
 # I use `float` to basically mean a number with a decimal point in it
 float ->
