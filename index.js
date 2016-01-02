@@ -4,8 +4,8 @@
  * dice rolling using a nearley parser
  */
 
-import nearley from 'nearley';
-import grammar from './generated-grammar';
+nearley = require('nearley');
+grammar = require('./grammar');
 
 // returns a syntax tree from a string like "(1d4 + 2)^10"
 function parse(string) {
@@ -23,7 +23,7 @@ function evaluate(tree) {
   return tree
 }
 
-main() {
+function main() {
   const input = process.argv[2]
   console.log(`input: ${input}`)
   const tree = parse(input)
@@ -32,3 +32,5 @@ main() {
   console.log('--- result ---')
   console.log(evaluate(tree))
 }
+
+main();

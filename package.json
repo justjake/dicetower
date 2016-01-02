@@ -1,6 +1,6 @@
 {
   "scripts": {
     "go": "npm run build && node index.js",
-    "build": "nearleyc grammar.ne > grammar.js"
+    "build": "nearleyc grammar.ne | tee grammar.js"
   }
 }
