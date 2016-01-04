@@ -36,15 +36,15 @@ function expected(array) {
 
 // get a faces array for the number of sides or a special prenamed dice
 function withFaces(sidesCountOrName, fn) {
-  const faces = DiceFaces[sidesCountOrName] || range(1, sidesCountOrName);
-  DiceFaces[sidesCount] = faces;
+  const faces = KnownDice[sidesCountOrName] || range(1, sidesCountOrName);
+  KnownDice[sidesCountOrName] = faces;
   return fn(faces);
 }
 
 // roll some dice with the given sides
 // return an array of individual dice rolls
 export function roll(dice, sidesCountOrName) {
-  return withFace(sidesCountOrName, sides => {
+  return withFaces(sidesCountOrName, sides => {
     const result = [];
     for (let i = 0; i < dice; i++) {
       result.push(choose(sides));
@@ -59,7 +59,7 @@ export function roll(dice, sidesCountOrName) {
 // supposedly)
 // TODO: just return a Number?
 export function expect(dice, sidesCountOrName) {
-  return withFace(sidesCountOrName, sides => {
+  return withFaces(sidesCountOrName, sides => {
     const result = [];
     for (let i = 0; i < dice; i++) {
       result.push(expected(sides));

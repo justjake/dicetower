@@ -4,29 +4,47 @@
 function id(x) {return x[0]; }
 
 
+const { roll, expect, KnownDice } = require('./dice');
+
+const VALUE_PROPS = ['value', 'expected'];
+
+function fetch(obj, prop) {
+  if (obj && obj[prop] !== undefined) {
+    return obj[prop];
+  }
+  return obj;
+}
+
 function normal(evaluator) {
   return function(data) {
-    var unwrapped = data.map(val);
-    var value = evaluator(unwrapped);
-    var annotation = data.map(src);
-    return { src: annotation, value: value };
+    const result = {};
+    VALUE_PROPS.forEach(prop => {
+      const unwrapped = data.map(item => fetch(item, prop));
+      const value = evaluator(unwrapped);
+      result[prop] = value;
+    });
+    result.src = data.map(item => fetch(item, 'src'));
+    return result;
   }
 }
 
-function val(el) {
-  if (el && el.value !== undefined) {
-    return el.value;
-  }
-  return el;
+function sum(array) {
+  return array.reduce((prev, next) => prev + next, 0);
 }
 
-function src(el) {
-  if (el && el.src !== undefined) {
-    return el.src;
-  }
-  return el;
+function rollKnownDice(num, sides) {
+  const rolls = roll(num, sides);
+  const expectedRolls = expect(num, sides);
+  return {
+    value: sum(rolls),
+    expected: sum(expectedRolls),
+    src: {
+      request: `${num}d${sides}`,
+      rolls,
+      expectedRolls,
+    }
+  };
 }
-
 var grammar = {
     ParserRules: [
     {"name": "posint$ebnf$1", "symbols": [/[0-9]/]},
@@ -108,16 +126,7 @@ var grammar = {
     {"name": "__", "symbols": ["__$ebnf$1"], "postprocess": function(d) {return null;}},
     {"name": "wschar", "symbols": [/[ \t\n\v\f]/], "postprocess": id},
     {"name": "main", "symbols": ["_", "AS", "_"], "postprocess": normal(function(d) {return d[1]; })},
-    {"name": "P", "symbols": [{"literal":"("}, "_", "AS", "_", {"literal":")"}], "postprocess": 
-        /* function(d) {
-          var proc = function(d) { return d[2]; }
-          var tfx = normal(proc);
-          var procd = tfx(d);
-          procd.src = [ proc(procd.src) ];
-          return procd
-        } */
-        normal(function(d) { return d[2]; })
-        },
+    {"name": "P", "symbols": [{"literal":"("}, "_", "AS", "_", {"literal":")"}], "postprocess": normal(function(d) { return d[2]; })},
     {"name": "P", "symbols": ["N"], "postprocess": id},
     {"name": "E", "symbols": ["P", "_", {"literal":"^"}, "_", "E"], "postprocess": normal(function(d) {return Math.pow(d[0], d[4]); })},
     {"name": "E", "symbols": ["P"], "postprocess": id},
@@ -148,15 +157,42 @@ var grammar = {
     {"name": "N", "symbols": ["N$string$8", "_", "P"], "postprocess": normal(function(d) {return Math.sqrt(d[2]); })},
     {"name": "N$string$9", "symbols": [{"literal":"l"}, {"literal":"n"}], "postprocess": function joiner(d) {return d.join('');}},
     {"name": "N", "symbols": ["N$string$9", "_", "P"], "postprocess": normal(function(d) {return Math.log(d[2]); })},
-    {"name": "DICE", "symbols": ["posint", {"literal":"d"}, "posint"], "postprocess": 
+    {"name": "DICE", "symbols": ["NORMAL_DICE"], "postprocess": id},
+    {"name": "DICE", "symbols": ["FUDGE_DICE"], "postprocess": id},
+    {"name": "DICE", "symbols": ["CUSTOM_DICE"], "postprocess": id},
+    {"name": "NORMAL_DICE", "symbols": ["posint", {"literal":"d"}, "posint"], "postprocess": 
         // TODO dice it up for reals
         function(d) {
-          return {
-            value: d[0] * d[2],
-            src: 'lol dice: ' + d[0] + ' ' + d[2]
-          }
+          const num = d[0];
+          const sides = d[2];
+          return rollKnownDice(num, sides);
         }
+        },
+    {"name": "FUDGE_DICE$string$1", "symbols": [{"literal":"d"}, {"literal":"F"}], "postprocess": function joiner(d) {return d.join('');}},
+    {"name": "FUDGE_DICE", "symbols": ["posint", "FUDGE_DICE$string$1"], "postprocess": 
+        function(d) {
+          const num = d[0];
+          return rollKnownDice(num, 'fudge');
         }
+        },
+    {"name": "CUSTOM_DICE", "symbols": ["posint", {"literal":"d"}, {"literal":"["}, "_", "LIST", "_", {"literal":"]"}], "postprocess": 
+        function(d) {
+          const count = d[0];
+          const faces = d[4];
+          console.log('faces', faces)
+          const name = faces.sort().join('|');
+          if (!KnownDice[name]) KnownDice[name] = faces;
+          return rollKnownDice(count, name);
+        }
+        },
+    {"name": "LIST", "symbols": ["posint"]},
+    {"name": "LIST", "symbols": ["posint", "SEPERATOR", "LIST"], "postprocess": 
+        function(d) {
+          return [d[0]].concat(d[2]);
+        }
+        },
+    {"name": "SEPERATOR", "symbols": ["_", {"literal":","}, "_"], "postprocess": function() { return null }},
+    {"name": "SEPERATOR", "symbols": ["__"], "postprocess": id}
 ]
   , ParserStart: "main"
 }

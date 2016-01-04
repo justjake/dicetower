@@ -3,7 +3,7 @@
 
 @{%
 
-import { Dice, FudgeDice } from './dice';
+const { roll, expect, KnownDice } = require('./dice');
 
 const VALUE_PROPS = ['value', 'expected'];
 
@@ -17,7 +17,7 @@ function fetch(obj, prop) {
 function normal(evaluator) {
   return function(data) {
     const result = {};
-    VALUE_PROPS.forEach(propName => {
+    VALUE_PROPS.forEach(prop => {
       const unwrapped = data.map(item => fetch(item, prop));
       const value = evaluator(unwrapped);
       result[prop] = value;
@@ -25,6 +25,24 @@ function normal(evaluator) {
     result.src = data.map(item => fetch(item, 'src'));
     return result;
   }
+}
+
+function sum(array) {
+  return array.reduce((prev, next) => prev + next, 0);
+}
+
+function rollKnownDice(num, sides) {
+  const rolls = roll(num, sides);
+  const expectedRolls = expect(num, sides);
+  return {
+    value: sum(rolls),
+    expected: sum(expectedRolls),
+    src: {
+      request: `${num}d${sides}`,
+      rolls,
+      expectedRolls,
+    }
+  };
 }
 %}
 
@@ -67,8 +85,7 @@ AS -> AS _ "+" _ MD {% normal(function(d) {return d[0]+d[4]; }) %}
 
 # A number or a normal(function of a number
 N -> decimal        {% id %}
-    | NORMAL_DICE   {% id %}
-    | FUDGE_DICE    {% id %}
+    | DICE          {% id %}
     | "sin" _ P     {% normal(function(d) {return Math.sin(d[2]); }) %}
     | "cos" _ P     {% normal(function(d) {return Math.cos(d[2]); }) %}
     | "tan" _ P     {% normal(function(d) {return Math.tan(d[2]); }) %}
@@ -82,12 +99,43 @@ N -> decimal        {% id %}
     | "sqrt" _ P    {% normal(function(d) {return Math.sqrt(d[2]); }) %}
     | "ln" _ P      {% normal(function(d) {return Math.log(d[2]); })  %}
 
-DICE -> posint "d" posint {%
+DICE -> NORMAL_DICE {% id %}
+      | FUDGE_DICE  {% id %}
+      | CUSTOM_DICE {% id %}
+
+NORMAL_DICE -> posint "d" posint {%
   // TODO dice it up for reals
   function(d) {
-    return {
-      value: d[0] * d[2],
-      src: 'lol dice: ' + d[0] + ' ' + d[2]
-    }
+    const num = d[0];
+    const sides = d[2];
+    return rollKnownDice(num, sides);
   }
 %}
+
+FUDGE_DICE -> posint "dF" {%
+  function(d) {
+    const num = d[0];
+    return rollKnownDice(num, 'fudge');
+  }
+%}
+
+CUSTOM_DICE -> posint "d" "[" _ LIST _ "]" {%
+  function(d) {
+    const count = d[0];
+    const faces = d[4];
+    console.log('faces', faces)
+    const name = faces.sort().join('|');
+    if (!KnownDice[name]) KnownDice[name] = faces;
+    return rollKnownDice(count, name);
+  }
+%}
+
+LIST -> posint
+      | posint SEPERATOR LIST {%
+  function(d) {
+    return [d[0]].concat(d[2]);
+  }
+%}
+
+SEPERATOR -> _ "," _ {% function() { return null } %}
+           | __      {% id %}
