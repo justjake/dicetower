@@ -6,6 +6,7 @@
 const { roll, expect, KnownDice } = require('./dice');
 
 const VALUE_PROPS = ['value', 'expected'];
+const PASSTHRU_PROPS = ['src'];
 
 function fetch(obj, prop) {
   if (obj && obj[prop] !== undefined) {
@@ -13,6 +14,8 @@ function fetch(obj, prop) {
   }
   return obj;
 }
+
+const val = thing => fetch(thing, 'value');
 
 function normal(evaluator) {
   return function(data) {
@@ -22,7 +25,9 @@ function normal(evaluator) {
       const value = evaluator(unwrapped);
       result[prop] = value;
     });
-    result.src = data.map(item => fetch(item, 'src'));
+    PASSTHRU_PROPS.forEach(prop => {
+      result[prop] = data.map(item => fetch(item, prop))
+    })
     return result;
   }
 }
@@ -31,7 +36,7 @@ function sum(array) {
   return array.reduce((prev, next) => prev + next, 0);
 }
 
-function rollKnownDice(num, sides) {
+function rollKnownDice(num, sides, src) {
   const rolls = roll(num, sides);
   const expectedRolls = expect(num, sides);
   return {
@@ -41,6 +46,7 @@ function rollKnownDice(num, sides) {
       request: `${num}d${sides}`,
       rolls,
       expectedRolls,
+      src2: src,
     }
   };
 }
@@ -103,35 +109,36 @@ DICE -> NORMAL_DICE {% id %}
       | FUDGE_DICE  {% id %}
       | CUSTOM_DICE {% id %}
 
-NORMAL_DICE -> posint "d" posint {%
+NORMAL_DICE -> P "d" P {%
   // TODO dice it up for reals
   function(d) {
-    const num = d[0];
-    const sides = d[2];
-    return rollKnownDice(num, sides);
+    const num = val(d[0]);
+    const sides = val(d[2]);
+    console.log('sides', sides);
+    return rollKnownDice(num, sides, d);
   }
 %}
 
-FUDGE_DICE -> posint "dF" {%
+FUDGE_DICE -> P "dF" {%
   function(d) {
-    const num = d[0];
-    return rollKnownDice(num, 'fudge');
+    const num = val(d[0]);
+    return rollKnownDice(num, 'fudge', d);
   }
 %}
 
-CUSTOM_DICE -> posint "d" "[" _ LIST _ "]" {%
+CUSTOM_DICE -> P "d" "[" _ LIST _ "]" {%
   function(d) {
-    const count = d[0];
-    const faces = d[4];
+    const count = val(d[0]);
+    const faces = val(d[4]).map(val);
     console.log('faces', faces)
-    const name = faces.sort().join('|');
+    const name = `[${faces.sort().join(' ')}]`;
     if (!KnownDice[name]) KnownDice[name] = faces;
-    return rollKnownDice(count, name);
+    return rollKnownDice(count, name, d);
   }
 %}
 
-LIST -> posint
-      | posint SEPERATOR LIST {%
+LIST -> P
+      | P SEPERATOR LIST {%
   function(d) {
     return [d[0]].concat(d[2]);
   }

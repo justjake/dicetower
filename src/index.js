@@ -17,8 +17,14 @@ export function parse(string) {
   return parser.results;
 }
 
-export function evaluate(tree) {
-  return unwrap(tree).value;
+function sum(array) {
+  return array.reduce((prev, next) => prev + next, 0);
+}
+
+export function evaluate(almostTree) {
+  const tree = unwrap(almostTree);
+  if (tree.length) return tree[0];
+  return tree;
 }
 
 function contains(needle, haystack) {
@@ -26,22 +32,33 @@ function contains(needle, haystack) {
 }
 
 // render the annotation of a tree
-export function render(almostTree) {
+export function render(almostTree, rolls = true, expected = true) {
   const tree = unwrap(almostTree);
   //console.log('render', tree)
   debugger;
   if (tree === null) return 'NULL';
-  if (tree.src) return render(tree.src);
+  if (tree.src) return render(tree.src, rolls, expected);
+  // special handling for dice rolls
+  if (tree.rolls) {
+    let diceRender = `${sum(tree.rolls)}`
+    if (rolls || expected) diceRender += ' (';
+    if (rolls) diceRender += `rolled ${tree.request}: ${tree.rolls.join('+')}`;
+    if (rolls && expected) diceRender += ', ';
+    if (expected) diceRender += `expected ${sum(tree.expectedRolls)}: ${tree.rolls.length}*${tree.expectedRolls[0]}`;
+    if (rolls || expected) diceRender += ')';
+    return diceRender;
+  }
   if (Array.isArray(tree)) {
     // handle paren arrays
     if (tree[0] === OPEN_PAREN && tree[tree.length - 1] === CLOSE_PAREN) {
-      return '(' + render(tree.slice(1, -1)) + ')';
+      return '(' + render(tree.slice(1, -1), rolls, expected) + ')';
     }
-
-    return tree.map(render).join(' ');
+    return tree.map(x => render(x, rolls, expected)).join(' ');
   }
+
   return tree;
 }
+
 
 function unwrap(array) {
   if (!Array.isArray(array)) return array;
@@ -53,13 +70,13 @@ function unwrap(array) {
 
 export function run(input) {
   console.log(`input: ${input}`)
-  const tree = parse(input)
+  const tree = evaluate(parse(input));
   console.log('--- tree ---')
   console.log(JSON.stringify(tree, null, "  ")) // unwrap(unwrap(tree).src), null, "  "))
   console.log('--- result ---')
-  console.log(evaluate(tree))
+  console.log(`${tree.value} (expected ${tree.expected})`);
   console.log('--- annotation ---')
-  console.log(render(tree));
+  console.log(render(tree, true, false));
 }
 
 function main() {

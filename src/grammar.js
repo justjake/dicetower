@@ -7,6 +7,7 @@ function id(x) {return x[0]; }
 const { roll, expect, KnownDice } = require('./dice');
 
 const VALUE_PROPS = ['value', 'expected'];
+const PASSTHRU_PROPS = ['src'];
 
 function fetch(obj, prop) {
   if (obj && obj[prop] !== undefined) {
@@ -14,6 +15,8 @@ function fetch(obj, prop) {
   }
   return obj;
 }
+
+const val = thing => fetch(thing, 'value');
 
 function normal(evaluator) {
   return function(data) {
@@ -23,7 +26,9 @@ function normal(evaluator) {
       const value = evaluator(unwrapped);
       result[prop] = value;
     });
-    result.src = data.map(item => fetch(item, 'src'));
+    PASSTHRU_PROPS.forEach(prop => {
+      result[prop] = data.map(item => fetch(item, prop))
+    })
     return result;
   }
 }
@@ -32,7 +37,7 @@ function sum(array) {
   return array.reduce((prev, next) => prev + next, 0);
 }
 
-function rollKnownDice(num, sides) {
+function rollKnownDice(num, sides, src) {
   const rolls = roll(num, sides);
   const expectedRolls = expect(num, sides);
   return {
@@ -42,6 +47,7 @@ function rollKnownDice(num, sides) {
       request: `${num}d${sides}`,
       rolls,
       expectedRolls,
+      src2: src,
     }
   };
 }
@@ -160,33 +166,34 @@ var grammar = {
     {"name": "DICE", "symbols": ["NORMAL_DICE"], "postprocess": id},
     {"name": "DICE", "symbols": ["FUDGE_DICE"], "postprocess": id},
     {"name": "DICE", "symbols": ["CUSTOM_DICE"], "postprocess": id},
-    {"name": "NORMAL_DICE", "symbols": ["posint", {"literal":"d"}, "posint"], "postprocess": 
+    {"name": "NORMAL_DICE", "symbols": ["P", {"literal":"d"}, "P"], "postprocess": 
         // TODO dice it up for reals
         function(d) {
-          const num = d[0];
-          const sides = d[2];
-          return rollKnownDice(num, sides);
+          const num = val(d[0]);
+          const sides = val(d[2]);
+          console.log('sides', sides);
+          return rollKnownDice(num, sides, d);
         }
         },
     {"name": "FUDGE_DICE$string$1", "symbols": [{"literal":"d"}, {"literal":"F"}], "postprocess": function joiner(d) {return d.join('');}},
-    {"name": "FUDGE_DICE", "symbols": ["posint", "FUDGE_DICE$string$1"], "postprocess": 
+    {"name": "FUDGE_DICE", "symbols": ["P", "FUDGE_DICE$string$1"], "postprocess": 
         function(d) {
-          const num = d[0];
-          return rollKnownDice(num, 'fudge');
+          const num = val(d[0]);
+          return rollKnownDice(num, 'fudge', d);
         }
         },
-    {"name": "CUSTOM_DICE", "symbols": ["posint", {"literal":"d"}, {"literal":"["}, "_", "LIST", "_", {"literal":"]"}], "postprocess": 
+    {"name": "CUSTOM_DICE", "symbols": ["P", {"literal":"d"}, {"literal":"["}, "_", "LIST", "_", {"literal":"]"}], "postprocess": 
         function(d) {
-          const count = d[0];
-          const faces = d[4];
+          const count = val(d[0]);
+          const faces = val(d[4]).map(val);
           console.log('faces', faces)
-          const name = faces.sort().join('|');
+          const name = `[${faces.sort().join(' ')}]`;
           if (!KnownDice[name]) KnownDice[name] = faces;
-          return rollKnownDice(count, name);
+          return rollKnownDice(count, name, d);
         }
         },
-    {"name": "LIST", "symbols": ["posint"]},
-    {"name": "LIST", "symbols": ["posint", "SEPERATOR", "LIST"], "postprocess": 
+    {"name": "LIST", "symbols": ["P"]},
+    {"name": "LIST", "symbols": ["P", "SEPERATOR", "LIST"], "postprocess": 
         function(d) {
           return [d[0]].concat(d[2]);
         }
