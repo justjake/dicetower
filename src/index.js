@@ -11,13 +11,13 @@ const OPEN_PAREN = '('
 const CLOSE_PAREN = ')'
 
 // returns a syntax tree from a string like "(1d4 + 2)^10"
-function parse(string) {
+export function parse(string) {
   const parser = new nearley.Parser(grammar.ParserRules, grammar.ParserStart);
   parser.feed(string);
   return parser.results;
 }
 
-function evaluate(tree) {
+export function evaluate(tree) {
   return unwrap(tree).value;
 }
 
@@ -26,7 +26,7 @@ function contains(needle, haystack) {
 }
 
 // render the annotation of a tree
-function render(almostTree) {
+export function render(almostTree) {
   const tree = unwrap(almostTree);
   //console.log('render', tree)
   debugger;
@@ -51,7 +51,7 @@ function unwrap(array) {
   return reduced;
 }
 
-function run(input) {
+export function run(input) {
   console.log(`input: ${input}`)
   const tree = parse(input)
   console.log('--- tree ---')

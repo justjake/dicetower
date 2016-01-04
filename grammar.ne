@@ -3,29 +3,29 @@
 
 @{%
 
+import { Dice, FudgeDice } from './dice';
+
+const VALUE_PROPS = ['value', 'expected'];
+
+function fetch(obj, prop) {
+  if (obj && obj[prop] !== undefined) {
+    return obj[prop];
+  }
+  return obj;
+}
+
 function normal(evaluator) {
   return function(data) {
-    var unwrapped = data.map(val);
-    var value = evaluator(unwrapped);
-    var annotation = data.map(src);
-    return { src: annotation, value: value };
+    const result = {};
+    VALUE_PROPS.forEach(propName => {
+      const unwrapped = data.map(item => fetch(item, prop));
+      const value = evaluator(unwrapped);
+      result[prop] = value;
+    });
+    result.src = data.map(item => fetch(item, 'src'));
+    return result;
   }
 }
-
-function val(el) {
-  if (el && el.value !== undefined) {
-    return el.value;
-  }
-  return el;
-}
-
-function src(el) {
-  if (el && el.src !== undefined) {
-    return el.src;
-  }
-  return el;
-}
-
 %}
 
 # This is a nice little grammar to familiarize yourself
@@ -48,16 +48,7 @@ main -> _ AS _ {% normal(function(d) {return d[1]; }) %}
 # We define each level of precedence as a nonterminal.
 
 # Parentheses
-P -> "(" _ AS _ ")" {%
-  /* function(d) {
-    var proc = function(d) { return d[2]; }
-    var tfx = normal(proc);
-    var procd = tfx(d);
-    procd.src = [ proc(procd.src) ];
-    return procd
-  } */
-  normal(function(d) { return d[2]; })
-%}
+P -> "(" _ AS _ ")" {% normal(function(d) { return d[2]; }) %}
     | N             {% id %}
 
 # Exponents
@@ -76,7 +67,8 @@ AS -> AS _ "+" _ MD {% normal(function(d) {return d[0]+d[4]; }) %}
 
 # A number or a normal(function of a number
 N -> decimal        {% id %}
-    | DICE          {% id %}
+    | NORMAL_DICE   {% id %}
+    | FUDGE_DICE    {% id %}
     | "sin" _ P     {% normal(function(d) {return Math.sin(d[2]); }) %}
     | "cos" _ P     {% normal(function(d) {return Math.cos(d[2]); }) %}
     | "tan" _ P     {% normal(function(d) {return Math.tan(d[2]); }) %}
