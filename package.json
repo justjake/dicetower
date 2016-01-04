@@ -1,6 +1,13 @@
 {
   "scripts": {
     "go": "npm run build && node index.js",
-    "build": "nearleyc grammar.ne | tee grammar.js"
+    "build": "./build.sh"
+  },
+  "dependencies": {
+    "babel": "5.8.34",
+    "nearley": "2.0.1"
+  },
+  "devDependencies": {
+    "babel": "5.8.34"
   }
 }
