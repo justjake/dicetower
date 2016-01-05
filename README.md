@@ -26,4 +26,21 @@ dicetower.report('2d4 * 1d[2 3 5 7 9 14]', true);
 
 # ok so what's this grammar thing?
 
-I dunno. It's cool. It parses your string and does the calculation.
+I dunno. It's cool. It parses your string and does the calculation. You can
+[read it here](grammar.ne). This is a
+[Nearley](https://github.com/Hardmath123/nearley) grammar.
+
+Here's a full list of supported expressions
+
+- parens `(3 + 1d4) * 2`
+- exponents `4^8`
+- multiplication `4 * 4` and division `4 / 1d2`
+- addition `1 + 1` and subtraction `2 - 2d4`
+- a range of mathematical functions and constants `sqrt(sin(5)) * pi`
+- unary negative numbers `-1 + 5`
+- floats and stuff `0.25 * .55`
+- dice
+  - regular dice `2d8`
+  - fudge dice `4dF`
+  - dice with arbitrary custom faces `2d[2 4 6 8 10]`
+  - any value in a dice expression can be an expression `(1d6)d[1 2 3 4 2d4 2d8]`
