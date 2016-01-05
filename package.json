@@ -1,7 +1,17 @@
 {
   "name": "dicetower",
-  "author": "Jake Teton-Landis <@jitl>",
+  "description": "library and hubot plugin for advanced dice rolling shenanigans",
   "version": "0.1.0",
+  "keywords": ["dice", "rolling", "expected", "hubot-scripts"],
+  "license": "100% proprietary code, do not steal or use.",
+  "author": {
+    "name": "Jake Teton-Landis",
+    "url": "https://twitter.com/@jitl"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/justjake/dicetower"
+  },
   "scripts": {
     "go": "npm run build && node index.js",
     "build": "./build.sh"
