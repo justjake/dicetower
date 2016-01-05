@@ -88,9 +88,7 @@ export function report(input, useExpectedValue = false) {
   return `*${useExpectedValue ? tree.expected : tree.value}*${seperator}(${asRolled})`;
 }
 
-function main() {
+export function main() {
   const input = process.argv[2];
   run(input);
 }
-
-main();
