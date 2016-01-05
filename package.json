@@ -1,10 +1,12 @@
 {
+  "name": "dicetower",
+  "author": "Jake Teton-Landis <@jitl>",
+  "version": "0.1.0",
   "scripts": {
     "go": "npm run build && node index.js",
     "build": "./build.sh"
   },
   "dependencies": {
-    "babel": "5.8.34",
     "nearley": "2.0.1"
   },
   "devDependencies": {

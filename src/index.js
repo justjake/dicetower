@@ -77,12 +77,14 @@ export function run(input) {
   console.log(JSON.stringify(tree, null, "  ")) // unwrap(unwrap(tree).src), null, "  "))
   console.log('--- report ---')
   console.log(report(input));
+  console.log(report(input, true));
 }
 
 export function report(input, useExpectedValue = false) {
+  const MAX_LEN = 70
   const tree = evaluate(parse(input));
   const asRolled = useExpectedValue ? render(tree, false, true, true) : render(tree, true, false, false);
-  const seperator = asRolled.length < 30 ? ' ' : '\n';
+  const seperator = asRolled.length < MAX_LEN ? ' ' : '\n';
   return `*${useExpectedValue ? tree.expected : tree.value}*${seperator}(${asRolled})`;
 }
 
