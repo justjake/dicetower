@@ -1,6 +1,6 @@
 // importers can add more named dice to this array if they want
 export const KnownDice = {
-  fudge: range(-2, 2),
+  fudge: [-1, -1, 0, 0, 1, 1],
 }
 
 // create an array of values starting at start and endoing at stop, inclusive
