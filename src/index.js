@@ -32,11 +32,11 @@ export function contains(needle, haystack) {
 }
 
 // render the annotation of a tree
-export function render(almostTree, rolls = true, expected = true, expectedOnly = false) {
+export function render(almostTree, rolls = true, expected = true, expectedOnly = false, depth = 0) {
   const tree = unwrap(almostTree);
   //console.log('render', tree)
   if (tree === null) return 'NULL';
-  if (tree.src) return render(tree.src, rolls, expected);
+  if (tree.src) return render(tree.src, rolls, expected, depth + 1);
   // special handling for dice rolls
   if (tree.rolls) {
     let diceRender = expectedOnly ?
@@ -53,9 +53,9 @@ export function render(almostTree, rolls = true, expected = true, expectedOnly =
   if (Array.isArray(tree)) {
     // handle paren arrays
     if (tree[0] === OPEN_PAREN && tree[tree.length - 1] === CLOSE_PAREN) {
-      return '(' + render(tree.slice(1, -1), rolls, expected, expectedOnly) + ')';
+      return '(' + render(tree.slice(1, -1), rolls, expected, expectedOnly, depth + 1) + ')';
     }
-    return tree.map(x => render(x, rolls, expected, expectedOnly)).join(' ');
+    return tree.map(x => render(x, rolls, expected, expectedOnly, depth + 1)).join(' ');
   }
 
   return tree;
@@ -84,6 +84,16 @@ export function report(input, useExpectedValue = false) {
   const MAX_LEN = 70
   const tree = evaluate(parse(input));
   const asRolled = useExpectedValue ? render(tree, false, true, true) : render(tree, true, false, false);
+
+  // hande rolls of just one dice in a special manner
+  const src = unwrap(tree.src)
+  if (src && src.src2) {
+    const src2 = unwrap(src.src2)
+    if (src2.length === src2.filter(x => (typeof x === 'number') || (typeof x === 'string')).length) {
+      return asRolled;
+    }
+  }
+
   const seperator = asRolled.length < MAX_LEN ? ' ' : '\n';
   return `*${useExpectedValue ? tree.expected : tree.value}*${seperator}(${asRolled})`;
 }

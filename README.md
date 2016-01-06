@@ -44,3 +44,10 @@ Here's a full list of supported expressions
   - fudge dice `4dF`
   - dice with arbitrary custom faces `2d[2 4 6 8 10]`
   - any value in a dice expression can be an expression `(1d6)d[1 2 3 4 2d4 2d8]`
+
+# how do i hubot
+
+I think this is how:
+
+0. you `npm install --save dicetower` in your hubot dir
+0. you add `'dicetower/lib/hubot_plugin'` to your external-scripts.json file
