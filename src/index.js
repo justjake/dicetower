@@ -36,7 +36,7 @@ export function render(almostTree, rolls = true, expected = true, expectedOnly =
   const tree = unwrap(almostTree);
   //console.log('render', tree)
   if (tree === null) return 'NULL';
-  if (tree.src) return render(tree.src, rolls, expected, depth + 1);
+  if (tree.src) return render(tree.src, rolls, expected, expectedOnly, depth + 1);
   // special handling for dice rolls
   if (tree.rolls) {
     let diceRender = expectedOnly ?
